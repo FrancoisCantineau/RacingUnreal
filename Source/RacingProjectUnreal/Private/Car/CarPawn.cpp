@@ -13,25 +13,49 @@ ACarPawn::ACarPawn()
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Base mesh"));
 	BaseMesh->SetupAttachment(BoxComp);
 
-	FrontLeftWheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Front left wheel mesh"));
-	FrontLeftWheel->SetupAttachment(BaseMesh);
+	Pivot_Wheel_FL = CreateDefaultSubobject<USceneComponent>(TEXT("FrontLeft"));
+	Pivot_Wheel_FL->SetupAttachment(BaseMesh);
+
+	Pivot_Wheel_FR = CreateDefaultSubobject<USceneComponent>(TEXT("FrontRight"));
+	Pivot_Wheel_FR->SetupAttachment(BaseMesh);
+
+	Pivot_Wheel_RL = CreateDefaultSubobject<USceneComponent>(TEXT("RearLeft"));
+	Pivot_Wheel_RL->SetupAttachment(BaseMesh);
+
+	Pivot_Wheel_RR = CreateDefaultSubobject<USceneComponent>(TEXT("RearRight"));
+	Pivot_Wheel_RR->SetupAttachment(BaseMesh);
 	
-	FrontRightWheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Front right wheel mesh"));
-	FrontRightWheel->SetupAttachment(BaseMesh);
+	Wheel_FL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Front left wheel mesh"));
+	Wheel_FL->SetupAttachment(BaseMesh);
+	
+	Wheel_FR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Front right wheel mesh"));
+	Wheel_FR->SetupAttachment(BaseMesh);
 
-	BackLeftWheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Back left wheel mesh"));
-	BackLeftWheel->SetupAttachment(BaseMesh);
+	Wheel_RL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Rear left wheel mesh"));
+	Wheel_RL->SetupAttachment(BaseMesh);
 
-	BackRightWheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Back right wheel mesh"));
-	BackRightWheel->SetupAttachment(BaseMesh);
+	Wheel_RR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Rear right wheel mesh"));
+	Wheel_RR->SetupAttachment(BaseMesh);
 	
 
 }
 
 void ACarPawn::BeginPlay()
 {
-	Super::BeginPlay();
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Hello Unreal!"));
 	
+	Super::BeginPlay();
+
+	Pivot_Wheel_FL->SetWorldLocation(Wheel_FL->GetComponentLocation());
+	Pivot_Wheel_FR->SetWorldLocation(Wheel_FR->GetComponentLocation());
+	Pivot_Wheel_RL->SetWorldLocation(Wheel_RL->GetComponentLocation());
+	Pivot_Wheel_RR->SetWorldLocation(Wheel_RR->GetComponentLocation());
+
+	Wheel_FL->AttachToComponent(Pivot_Wheel_FL, FAttachmentTransformRules::KeepWorldTransform);
+	Wheel_FR->AttachToComponent(Pivot_Wheel_FR, FAttachmentTransformRules::KeepWorldTransform);
+	Wheel_RL->AttachToComponent(Pivot_Wheel_RL, FAttachmentTransformRules::KeepWorldTransform);
+	Wheel_RR->AttachToComponent(Pivot_Wheel_RR, FAttachmentTransformRules::KeepWorldTransform);
 }
 
 void ACarPawn::Tick(float DeltaTime)

@@ -53,7 +53,7 @@ void APlayerCar::SetupPlayerInputComponent(class UInputComponent* PlayerInputCom
 void APlayerCar::Move(const FInputActionValue& Value)
 {
 	const FVector2d MovementVector = Value.Get<FVector2d>();
-
+	
 	if (Controller)
 	{
 		FVector DeltaLocation = FVector::ZeroVector;
