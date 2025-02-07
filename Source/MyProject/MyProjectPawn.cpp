@@ -95,7 +95,10 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 void AMyProjectPawn::Tick(float Delta)
 {
 	Super::Tick(Delta);
-
+	if (EnablePowerCutting)
+	{
+		TorqueCuttingFix();
+	}
 	// add some angular damping if the vehicle is in midair
 	bool bMovingOnGround = ChaosVehicleMovement->IsMovingOnGround();
 	GetMesh()->SetAngularDamping(bMovingOnGround ? 0.0f : 3.0f);
@@ -107,13 +110,74 @@ void AMyProjectPawn::Tick(float Delta)
 	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f));
 }
 
+void AMyProjectPawn::TorqueCuttingFix()
+{
+	if (GetVehicleMovementComponent()->GetTargetGear() >= 1)
+	{
+		if (GetVehicleMovementComponent()->GetTargetGear() == 1) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 2) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 3) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 4) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 3);
+			}
+		}
+	}
+	else
+	{
+		if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+			Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+		{
+			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 2);
+			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 3);
+		}
+
+	}
+}
+
+float AMyProjectPawn::MultiplyTorque(float GearTorque)
+{
+	return GetVehicleMovementComponent()->GetThrottleInput() * 1000 * GearTorque;
+}
+
 void AMyProjectPawn::Steering(const FInputActionValue& Value)
 {
-	// get the input magnitude for steering
 	float SteeringValue = Value.Get<float>();
+	float ResultDot;
+	if (USkeletalMeshComponent* VehicleMesh = GetMesh())
+	{
+		FVector Velocity = VehicleMesh->GetComponentVelocity();
+		FVector NormalizedVelocity = Velocity.IsNearlyZero() ? FVector::ZeroVector : Velocity.GetSafeNormal();
+		FVector RightVector = VehicleMesh->GetRightVector().GetSafeNormal();
+		ResultDot = FVector::DotProduct(NormalizedVelocity, RightVector);
+	}
 
 	// add the input
-	ChaosVehicleMovement->SetSteeringInput(SteeringValue);
+	ChaosVehicleMovement->SetSteeringInput(ResultDot *1 + SteeringValue);
 }
 
 void AMyProjectPawn::Throttle(const FInputActionValue& Value)
