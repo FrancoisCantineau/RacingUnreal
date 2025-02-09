@@ -141,4 +141,5 @@ public:
 	FORCEINLINE const TObjectPtr<UChaosWheeledVehicleMovementComponent>& GetChaosVehicleMovement() const { return ChaosVehicleMovement; }
 private:
 	bool EnablePowerCutting = true;
+	int tableau[4] = {450,350, 250, 150};
 };
