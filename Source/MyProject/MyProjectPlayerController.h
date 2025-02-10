@@ -48,6 +48,10 @@ public:
 	// End Actor interface
 
 	// Begin PlayerController interface
+
+	//Returns Vehicule UI
+	UMyProjectUI* GetVehicleUI() const { return VehicleUI; }
+	
 protected:
 
 	virtual void OnPossess(APawn* InPawn) override;

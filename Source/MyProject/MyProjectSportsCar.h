@@ -17,4 +17,5 @@ class MYPROJECT_API AMyProjectSportsCar : public AMyProjectPawn
 public:
 
 	AMyProjectSportsCar();
+	
 };
