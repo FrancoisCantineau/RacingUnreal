@@ -17,3 +17,23 @@ void UMyProjectUI::UpdateGear(int32 NewGear)
 	// call the Blueprint handler
 	OnGearUpdate(NewGear);
 }
+
+void UMyProjectUI::UpdateBoost(float NewBoost)
+{
+	// call the Blueprint handler
+	OnBoostUpdate(NewBoost);
+}
+
+void UMyProjectUI::UpdateChrono(float NewTime)
+{
+	// Calcul des minutes, secondes et centièmes
+	int32 Minutes = FMath::FloorToInt(NewTime / 60);
+	int32 Seconds = FMath::FloorToInt(NewTime) % 60;
+	int32 Centiseconds = FMath::FloorToInt((NewTime - FMath::FloorToInt(NewTime)) * 100);
+
+	// Formatage du chrono en string
+	FString FormattedTime = FString::Printf(TEXT("%02d:%02d:%02d"), Minutes, Seconds, Centiseconds);
+
+	// Appel de l'event Blueprint pour afficher le chrono
+	OnChronoUpdate(FormattedTime);
+}
