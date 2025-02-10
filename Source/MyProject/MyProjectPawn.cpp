@@ -114,15 +114,36 @@ void AMyProjectPawn::TorqueCuttingFix()
 {
 	if (GetVehicleMovementComponent()->GetTargetGear() >= 1)
 	{
-		for (int i = 0; i < 4; i++)
-		{
-			if (GetVehicleMovementComponent()->GetTargetGear() == i+1) {
-				if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
-					Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
-				{
-					VehicleComponent->SetDriveTorque(MultiplyTorque(tableau[i]), 2);
-					VehicleComponent->SetDriveTorque(MultiplyTorque(tableau[i]), 3);
-				}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 1) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 2) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 3) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 4) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 3);
 			}
 		}
 	}
