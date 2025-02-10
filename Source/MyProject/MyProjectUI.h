@@ -30,6 +30,12 @@ public:
 	/** Called to update the gear display */
 	void UpdateGear(int32 NewGear);
 
+	/** Called to update the boost display */
+	void UpdateBoost(float NewBoost);
+
+	/** Called to update the chrono display */
+	void UpdateChrono(float NewTime);
+
 protected:
 
 	/** Implemented in Blueprint to display the new speed */
@@ -39,4 +45,12 @@ protected:
 	/** Implemented in Blueprint to display the new gear */
 	UFUNCTION(BlueprintImplementableEvent, Category = Vehicle)
 	void OnGearUpdate(int32 NewGear);
+
+	/** Implemented in Blueprint to display the new boost */
+	UFUNCTION(BlueprintImplementableEvent, Category = Vehicle)
+	void OnBoostUpdate(float NewBoost);
+
+	/** Implemented in Blueprint to display the new chrono */
+	UFUNCTION(BlueprintImplementableEvent, Category = Vehicle)
+	void OnChronoUpdate(const FString& NewTime);
 };

@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "WheeledVehiclePawn.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "MyProjectPawn.generated.h"
+
 
 class UCameraComponent;
 class USpringArmComponent;
@@ -51,6 +54,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* SteeringAction;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* BoostAction;
+	
 	/** Throttle Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ThrottleAction;
@@ -75,9 +82,40 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ResetVehicleAction;
 
+	/** Boost Management */
+
+	/** Boost Level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	float BoostMeter = 100.0f; 
+
+	/** Boost comsumption over second */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	float BoostConsumption = 40.0f; 
+
+	/** Boost recharge rate over second */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	float BoostRechargeRate = 10.0f; 
+
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void SetBoostingInput(bool bIsBoostingP){ bIsBoosting = bIsBoostingP; };
+	bool GetBoostingInput(){ return bIsBoosting; };
+	
+	bool bCanBoost = true;
+	bool bIsBoosting = false;
+	bool bStopsBoosting = false;
+
+	/** Camera management */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraOffset")
+	FVector vCameraBoostOffsetPosition = FVector (0.0f,0.0f,0.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraOffset")
+	FRotator rCameraBoostOffsetRotator = FRotator (0.0f,0.0f,0.0f);;
+	
 	/** Keeps track of which camera is active */
 	bool bFrontCameraActive = false;
 
+	void TorqueCuttingFix();
+	float MultiplyTorque(float GearTorque);
 public:
 	AMyProjectPawn();
 
@@ -101,6 +139,13 @@ protected:
 	/** Handles throttle input */
 	void Throttle(const FInputActionValue& Value);
 
+	/** Handles boost input */
+	void Boost(const FInputActionValue& Value);
+	
+	/** Handles boost start/stop input */
+	void ActivateBoost(const FInputActionValue& Value);
+	void DeactivateBoost(const FInputActionValue& Value);
+	
 	/** Handles brake input */
 	void Brake(const FInputActionValue& Value);
 
@@ -125,6 +170,14 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Vehicle")
 	void BrakeLights(bool bBraking);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
+	UNiagaraComponent* BoostParticlesLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
+	UNiagaraComponent* BoostParticlesRight;
+
+	
+
 public:
 	/** Returns the front spring arm subobject */
 	FORCEINLINE USpringArmComponent* GetFrontSpringArm() const { return FrontSpringArm; }
@@ -136,4 +189,9 @@ public:
 	FORCEINLINE UCameraComponent* GetBackCamera() const { return BackCamera; }
 	/** Returns the cast Chaos Vehicle Movement subobject */
 	FORCEINLINE const TObjectPtr<UChaosWheeledVehicleMovementComponent>& GetChaosVehicleMovement() const { return ChaosVehicleMovement; }
+
+private:
+	bool EnablePowerCutting = true;
+	/** Returns the boost value */
+	FORCEINLINE float GetBoostMeter() const { return BoostMeter; }
 };

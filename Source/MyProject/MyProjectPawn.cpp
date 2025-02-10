@@ -52,6 +52,9 @@ AMyProjectPawn::AMyProjectPawn()
 	// get the Chaos Wheeled movement component
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 
+	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticles"));
+	BoostParticlesLeft->SetupAttachment(RootComponent);  // Ou un autre composant du véhicule, comme le moteur
+	
 }
 
 void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -80,8 +83,14 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		// look around 
 		EnhancedInputComponent->BindAction(LookAroundAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::LookAround);
 
-		// toggle camera 
+		// toggle camera
+		
 		EnhancedInputComponent->BindAction(ToggleCameraAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::ToggleCamera);
+
+		// boost
+		EnhancedInputComponent->BindAction(BoostAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::Boost);
+		EnhancedInputComponent->BindAction(BoostAction, ETriggerEvent::Started, this, &AMyProjectPawn::ActivateBoost);
+		EnhancedInputComponent->BindAction(BoostAction, ETriggerEvent::Completed, this, &AMyProjectPawn::DeactivateBoost);
 
 		// reset the vehicle 
 		EnhancedInputComponent->BindAction(ResetVehicleAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::ResetVehicle);
@@ -95,7 +104,10 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 void AMyProjectPawn::Tick(float Delta)
 {
 	Super::Tick(Delta);
-
+	if (EnablePowerCutting)
+	{
+		TorqueCuttingFix();
+	}
 	// add some angular damping if the vehicle is in midair
 	bool bMovingOnGround = ChaosVehicleMovement->IsMovingOnGround();
 	GetMesh()->SetAngularDamping(bMovingOnGround ? 0.0f : 3.0f);
@@ -105,15 +117,81 @@ void AMyProjectPawn::Tick(float Delta)
 	CameraYaw = FMath::FInterpTo(CameraYaw, 0.0f, Delta, 1.0f);
 
 	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f));
+
+	if (bStopsBoosting)
+	{
+		DeactivateBoost(FInputActionValue());
+	}
+}
+
+void AMyProjectPawn::TorqueCuttingFix()
+{
+	if (GetVehicleMovementComponent()->GetTargetGear() >= 1)
+	{
+		if (GetVehicleMovementComponent()->GetTargetGear() == 1) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 2) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 3) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 4) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 3);
+			}
+		}
+	}
+	else
+	{
+		if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+			Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+		{
+			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 2);
+			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 3);
+		}
+
+	}
+}
+
+float AMyProjectPawn::MultiplyTorque(float GearTorque)
+{
+	return GetVehicleMovementComponent()->GetThrottleInput() * 1000 * GearTorque;
 }
 
 void AMyProjectPawn::Steering(const FInputActionValue& Value)
 {
-	// get the input magnitude for steering
 	float SteeringValue = Value.Get<float>();
+	float ResultDot;
+	if (USkeletalMeshComponent* VehicleMesh = GetMesh())
+	{
+		FVector Velocity = VehicleMesh->GetComponentVelocity();
+		FVector NormalizedVelocity = Velocity.IsNearlyZero() ? FVector::ZeroVector : Velocity.GetSafeNormal();
+		FVector RightVector = VehicleMesh->GetRightVector().GetSafeNormal();
+		ResultDot = FVector::DotProduct(NormalizedVelocity, RightVector);
+	}
 
 	// add the input
-	ChaosVehicleMovement->SetSteeringInput(SteeringValue);
+	ChaosVehicleMovement->SetSteeringInput(ResultDot *1 + SteeringValue);
 }
 
 void AMyProjectPawn::Throttle(const FInputActionValue& Value)
@@ -203,5 +281,110 @@ void AMyProjectPawn::ResetVehicle(const FInputActionValue& Value)
 
 	UE_LOG(LogTemplateVehicle, Error, TEXT("Reset Vehicle"));
 }
+
+void AMyProjectPawn::Boost(const FInputActionValue& Value)
+{
+	if (GetBoostingInput())
+	{
+		// Check boost availability
+		if (BoostMeter < BoostConsumption || !bCanBoost)
+		{
+
+			DeactivateBoost(1);
+			return;
+		}
+		if (GetChaosVehicleMovement())
+		{
+    	
+			// Apply an impulse to the car
+			UPrimitiveComponent* VehicleRoot = Cast<UPrimitiveComponent>(GetRootComponent());
+			if (VehicleRoot)
+			{
+				FVector BoostDirection = GetActorForwardVector();
+				float BoostStrength = 100000.0f;
+				VehicleRoot->AddImpulse(BoostDirection * BoostStrength, NAME_None);
+			}
+
+			// Set new boost value
+			BoostMeter -= BoostConsumption;
+			if (BoostMeter <= 0)
+			{
+				BoostMeter = 0;
+				bCanBoost = false; 
+			}
+
+
+			// Camera manager
+			FVector TargetCameraPosition =  (vCameraBoostOffsetPosition); 
+			FRotator TargetCameraRotation = (rCameraBoostOffsetRotator);  
+
+			FVector CurrentCameraPosition = BackSpringArm->GetRelativeLocation();
+			FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
+    	
+			// Lerp to a new camera location
+			FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
+			FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
+
+			BackSpringArm->SetRelativeLocation(NewCameraPosition);
+			BackCamera->SetRelativeRotation(NewCameraRotation);
+
+			// Camera FOV
+			BackCamera->FieldOfView = FMath::Lerp(BackCamera->FieldOfView, 130, 0.1f);
+    	
+			// Camera shaking
+			FVector ShakeOffset = FVector(FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-2.0f, 2.0f));
+			BackSpringArm->SetWorldLocation(BackSpringArm->GetComponentLocation() + ShakeOffset);
+
+			// Particles manager
+			BoostParticlesLeft->Activate();
+		}
+	}
+	
+}
+
+
+void AMyProjectPawn::ActivateBoost(const FInputActionValue& Value)
+{
+	bStopsBoosting = false;
+
+	SetBoostingInput(true);
+}
+
+
+void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
+{
+	bStopsBoosting = true;
+	SetBoostingInput(false);
+	// Stop particles
+	BoostParticlesLeft->Deactivate();
+
+	// Reset camera position
+	
+	FVector TargetCameraPosition = FVector::ZeroVector;
+	FRotator TargetCameraRotation = FRotator::ZeroRotator;
+
+	FVector CurrentCameraPosition = BackSpringArm->GetRelativeLocation();
+	FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
+    	
+	// Lerp to a new camera location
+	FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
+	FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);
+
+	BackSpringArm->SetRelativeLocation(NewCameraPosition);
+	BackCamera->SetRelativeRotation(NewCameraRotation);
+
+	// Reset camera FOV
+	BackCamera->FieldOfView = FMath::Lerp(BackCamera->FieldOfView, 90, 0.1f);
+
+	// Stop camera shaking
+	FVector ShakeOffset = FVector(0, 0, 0);
+	BackSpringArm->SetWorldLocation(BackSpringArm->GetComponentLocation() + ShakeOffset);
+
+	if (NewCameraPosition == TargetCameraPosition)
+	{
+		bStopsBoosting = false;
+	}
+}
+
 
 #undef LOCTEXT_NAMESPACE

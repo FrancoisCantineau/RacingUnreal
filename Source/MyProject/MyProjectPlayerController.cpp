@@ -39,6 +39,7 @@ void AMyProjectPlayerController::Tick(float Delta)
 	{
 		VehicleUI->UpdateSpeed(VehiclePawn->GetChaosVehicleMovement()->GetForwardSpeed());
 		VehicleUI->UpdateGear(VehiclePawn->GetChaosVehicleMovement()->GetCurrentGear());
+		VehicleUI->UpdateBoost(VehiclePawn->GetBoostMeter());
 	}
 }
 
