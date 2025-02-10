@@ -119,6 +119,8 @@ protected:
 public:
 	AMyProjectPawn();
 
+	FORCEINLINE float GetBoostMeter() const { return BoostMeter; }
+	
 	// Begin Pawn interface
 
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -193,5 +195,5 @@ public:
 private:
 	bool EnablePowerCutting = true;
 	/** Returns the boost value */
-	FORCEINLINE float GetBoostMeter() const { return BoostMeter; }
+	
 };
