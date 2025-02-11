@@ -130,6 +130,10 @@ public:
 	// Begin Actor interface
 
 	virtual void Tick(float Delta) override;
+	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	void SetRespawnLocation(FVector _RespawnLocation);
+	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	void SetRespawnRotation(FVector _RespawnRotation);
 
 	// End Actor interface
 
@@ -178,6 +182,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
 	UNiagaraComponent* BoostParticlesRight;
 
+	void RespawnPlayer(AController* Controller, FVector _SpawnLocation, FRotator _SpawnRotation);
 	
 
 public:
@@ -195,5 +200,8 @@ public:
 private:
 	bool EnablePowerCutting = true;
 	/** Returns the boost value */
+
+	FVector RespawnLocation;
+	FRotator RespawnRotation;
 	
 };

@@ -282,6 +282,27 @@ void AMyProjectPawn::ResetVehicle(const FInputActionValue& Value)
 	UE_LOG(LogTemplateVehicle, Error, TEXT("Reset Vehicle"));
 }
 
+void AMyProjectPawn::RespawnPlayer(AController* Controller, FVector _SpawnLocation, FRotator _SpawnRotation)
+{
+	if (Controller)
+	{
+        
+		if (Controller)
+		{
+			// Récupérer le Pawn du joueur
+			APawn* PlayerPawn = Controller->GetPawn();
+        
+			// Si le Pawn existe, on le déplace
+			if (PlayerPawn)
+			{
+				// Déplacer le Pawn à la nouvelle position
+				PlayerPawn->SetActorLocation(_SpawnLocation);
+				PlayerPawn->SetActorRotation(_SpawnRotation);
+			}
+		}
+	}
+}
+
 void AMyProjectPawn::Boost(const FInputActionValue& Value)
 {
 	if (GetBoostingInput())
