@@ -82,6 +82,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ResetVehicleAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RespawnAction;
+
 	/** Boost Management */
 
 	/** Boost Level */
@@ -133,7 +136,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
 	void SetRespawnLocation(FVector _RespawnLocation);
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
-	void SetRespawnRotation(FVector _RespawnRotation);
+	FVector GetRespawnLocation() const { return RespawnLocation; }
+	//UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	//void SetRespawnRotation(FVector _RespawnRotation);
 
 	// End Actor interface
 
@@ -182,7 +187,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
 	UNiagaraComponent* BoostParticlesRight;
 
-	void RespawnPlayer(AController* Controller, FVector _SpawnLocation, FRotator _SpawnRotation);
 	
 
 public:

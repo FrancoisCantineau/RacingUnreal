@@ -10,6 +10,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 
 #define LOCTEXT_NAMESPACE "VehiclePawn"
 
@@ -94,6 +96,8 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 
 		// reset the vehicle 
 		EnhancedInputComponent->BindAction(ResetVehicleAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::ResetVehicle);
+
+		
 	}
 	else
 	{
@@ -122,6 +126,11 @@ void AMyProjectPawn::Tick(float Delta)
 	{
 		DeactivateBoost(FInputActionValue());
 	}
+}
+
+void AMyProjectPawn::SetRespawnLocation(FVector _RespawnLocation)
+{
+	RespawnLocation = _RespawnLocation;
 }
 
 void AMyProjectPawn::TorqueCuttingFix()
@@ -282,26 +291,7 @@ void AMyProjectPawn::ResetVehicle(const FInputActionValue& Value)
 	UE_LOG(LogTemplateVehicle, Error, TEXT("Reset Vehicle"));
 }
 
-void AMyProjectPawn::RespawnPlayer(AController* Controller, FVector _SpawnLocation, FRotator _SpawnRotation)
-{
-	if (Controller)
-	{
-        
-		if (Controller)
-		{
-			// Récupérer le Pawn du joueur
-			APawn* PlayerPawn = Controller->GetPawn();
-        
-			// Si le Pawn existe, on le déplace
-			if (PlayerPawn)
-			{
-				// Déplacer le Pawn à la nouvelle position
-				PlayerPawn->SetActorLocation(_SpawnLocation);
-				PlayerPawn->SetActorRotation(_SpawnRotation);
-			}
-		}
-	}
-}
+
 
 void AMyProjectPawn::Boost(const FInputActionValue& Value)
 {
