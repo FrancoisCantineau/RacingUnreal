@@ -10,6 +10,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 
 #define LOCTEXT_NAMESPACE "VehiclePawn"
 
@@ -94,6 +96,8 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 
 		// reset the vehicle 
 		EnhancedInputComponent->BindAction(ResetVehicleAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::ResetVehicle);
+
+		
 	}
 	else
 	{
@@ -122,6 +126,11 @@ void AMyProjectPawn::Tick(float Delta)
 	{
 		DeactivateBoost(FInputActionValue());
 	}
+}
+
+void AMyProjectPawn::SetRespawnLocation(FVector _RespawnLocation)
+{
+	RespawnLocation = _RespawnLocation;
 }
 
 void AMyProjectPawn::TorqueCuttingFix()
@@ -281,6 +290,8 @@ void AMyProjectPawn::ResetVehicle(const FInputActionValue& Value)
 
 	UE_LOG(LogTemplateVehicle, Error, TEXT("Reset Vehicle"));
 }
+
+
 
 void AMyProjectPawn::Boost(const FInputActionValue& Value)
 {

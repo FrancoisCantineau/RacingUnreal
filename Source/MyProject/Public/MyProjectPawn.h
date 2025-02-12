@@ -82,6 +82,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ResetVehicleAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RespawnAction;
+
 	/** Boost Management */
 
 	/** Boost Level */
@@ -130,6 +133,12 @@ public:
 	// Begin Actor interface
 
 	virtual void Tick(float Delta) override;
+	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	void SetRespawnLocation(FVector _RespawnLocation);
+	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	FVector GetRespawnLocation() const { return RespawnLocation; }
+	//UFUNCTION(BlueprintCallable, Category = "MonCategorie")
+	//void SetRespawnRotation(FVector _RespawnRotation);
 
 	// End Actor interface
 
@@ -195,5 +204,8 @@ public:
 private:
 	bool EnablePowerCutting = true;
 	/** Returns the boost value */
+
+	FVector RespawnLocation;
+	FRotator RespawnRotation;
 	
 };
