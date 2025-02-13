@@ -160,6 +160,7 @@ fabric.properties
 
 #Assets 
 Content/Assets/
+Content/10_Assets/
 
 *.umap
 
