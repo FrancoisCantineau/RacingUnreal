@@ -88,8 +88,6 @@ DerivedDataCache/*
 .idea/**/dictionaries
 .idea/**/shelf
 
-.idea/
-
 # AWS User-specific
 .idea/**/aws.xml
 
@@ -166,7 +164,3 @@ Content/Assets/
 *.umap
 
 Content/StarterContent/Architecture/Floor_400x400.uasset
-
-*.DotSettings.user
-
-*.sln.DotSettings.user

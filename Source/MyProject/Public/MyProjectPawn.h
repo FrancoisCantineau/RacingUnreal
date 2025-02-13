@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MyPauseWidget.h"
 #include "WheeledVehiclePawn.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -48,6 +49,11 @@ class AMyProjectPawn : public AWheeledVehiclePawn
 	/** Cast pointer to the Chaos Vehicle movement component */
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> ChaosVehicleMovement;
 
+
+	/** Audio Component Boost */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Boost, meta = (AllowPrivateAccess = "true"))
+	UAudioComponent* BoostAudioComponent;
+
 protected:
 
 	/** Steering Action */
@@ -81,28 +87,29 @@ protected:
 	/** Reset Vehicle Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ResetVehicleAction;
-
+	
+	/** Reset Vehicle Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* RespawnAction;
+	UInputAction* PauseMenuAction;
 
 	/** Boost Management */
 
+	/** Activate/Deactivate boost*/
+	void PlayBoostSound();
+
+	void StopBoostSound();
+	
 	/** Boost Level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
 	float BoostMeter = 100.0f; 
 
 	/** Boost comsumption over second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
-	float BoostConsumption = 40.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
-	float BoostMax =100.0f;
-	
-	bool IsDrifting = false;
+	float BoostConsumption = 40.0f; 
 
 	/** Boost recharge rate over second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
-	float BoostRechargeRate = 5.0f; 
+	float BoostRechargeRate = 10.0f; 
 
 	UFUNCTION(BlueprintCallable, Category = "Boost")
 	void SetBoostingInput(bool bIsBoostingP){ bIsBoosting = bIsBoostingP; };
@@ -124,6 +131,8 @@ protected:
 
 	void TorqueCuttingFix();
 	float MultiplyTorque(float GearTorque);
+
+	
 public:
 	AMyProjectPawn();
 
@@ -136,15 +145,8 @@ public:
 	// End Pawn interface
 
 	// Begin Actor interface
-	virtual void BeginPlay() override;
-	virtual void Tick(float Delta) override;
-	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
-	void SetRespawnLocation(FVector _RespawnLocation);
-	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
-	FVector GetRespawnLocation() const { return RespawnLocation; }
 
-	UFUNCTION(BlueprintCallable, Category = "Boost")
-	void ReloadBoost();
+	virtual void Tick(float Delta) override;
 
 	// End Actor interface
 
@@ -183,6 +185,9 @@ protected:
 	/** Handles reset vehicle input */
 	void ResetVehicle(const FInputActionValue& Value);
 
+	/** Handles Pause menu display */
+	void SetPauseMenu(const FInputActionValue& Value);
+	
 	/** Called when the brake lights are turned on or off */
 	UFUNCTION(BlueprintImplementableEvent, Category="Vehicle")
 	void BrakeLights(bool bBraking);
@@ -192,8 +197,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
 	UNiagaraComponent* BoostParticlesRight;
-
-
 
 	
 
@@ -211,9 +214,10 @@ public:
 
 private:
 	bool EnablePowerCutting = true;
-	/** Returns the boost value */
 
-	FVector RespawnLocation;
+	/** Variable used to manage menu display*/
+	bool IsMenuActive = false;
+	
 
 	UPROPERTY(EditAnywhere, Category="DeadZone")
 	float DeadZonCar;

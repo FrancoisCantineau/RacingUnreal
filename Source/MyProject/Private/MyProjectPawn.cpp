@@ -10,10 +10,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/PlayerController.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerStart.h"
+#include "Components/AudioComponent.h"
+#include "MyProjectPlayerController.h"
+#include "Sound/SoundBase.h"
+
 
 #define LOCTEXT_NAMESPACE "VehiclePawn"
 
@@ -57,7 +57,10 @@ AMyProjectPawn::AMyProjectPawn()
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 
 	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticles"));
-	BoostParticlesLeft->SetupAttachment(RootComponent);  // Ou un autre composant du véhicule, comme le moteur
+	BoostParticlesLeft->SetupAttachment(RootComponent);  
+
+	BoostAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	BoostAudioComponent->SetupAttachment(RootComponent);
 	
 }
 
@@ -99,23 +102,12 @@ void AMyProjectPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		// reset the vehicle 
 		EnhancedInputComponent->BindAction(ResetVehicleAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::ResetVehicle);
 
-		
+		// pause menu
+		EnhancedInputComponent-> BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &AMyProjectPawn::SetPauseMenu);
 	}
 	else
 	{
 		UE_LOG(LogTemplateVehicle, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	}
-}
-
-void AMyProjectPawn::BeginPlay()
-{
-	Super::BeginPlay();
-	APlayerStart* PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
-
-	if (PlayerStart)
-	{
-		RespawnLocation = PlayerStart->GetActorLocation();
-        
 	}
 }
 
@@ -140,48 +132,43 @@ void AMyProjectPawn::Tick(float Delta)
 	{
 		DeactivateBoost(FInputActionValue());
 	}
-	ReloadBoost();
 }
 
-void AMyProjectPawn::SetRespawnLocation(FVector _RespawnLocation)
-{
-	RespawnLocation = _RespawnLocation;
-}
 
 void AMyProjectPawn::TorqueCuttingFix()
 {
 	if (GetVehicleMovementComponent()->GetTargetGear() >= 1)
 	{
-		if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
-			Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
-		{
-			// Déclaration de la variable pour multiplier le couple
-			float TorqueMultiplier = 0;
-    
-			switch (GetVehicleMovementComponent()->GetTargetGear())
+		if (GetVehicleMovementComponent()->GetTargetGear() == 1) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
 			{
-			case 1:
-				TorqueMultiplier = 450;
-				break;
-			case 2:
-				TorqueMultiplier = 350;
-				break;
-			case 3:
-				TorqueMultiplier = 250;
-				break;
-			case 4:
-				TorqueMultiplier = 150;
-				break;
-			default:
-				TorqueMultiplier = 0;  
-				break;
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(450), 3);
 			}
-    
-			// Application du couple à toutes les roues
-			if (TorqueMultiplier > 0)
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 2) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
 			{
-				VehicleComponent->SetDriveTorque(MultiplyTorque(TorqueMultiplier), 2);
-				VehicleComponent->SetDriveTorque(MultiplyTorque(TorqueMultiplier), 3);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(350), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 3) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(250), 3);
+			}
+		}
+		if (GetVehicleMovementComponent()->GetTargetGear() == 4) {
+			if (UChaosWheeledVehicleMovementComponent* VehicleComponent =
+				Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement()))
+			{
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 2);
+				VehicleComponent->SetDriveTorque(MultiplyTorque(150), 3);
 			}
 		}
 	}
@@ -193,24 +180,13 @@ void AMyProjectPawn::TorqueCuttingFix()
 			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 2);
 			VehicleComponent->SetDriveTorque(GetVehicleMovementComponent()->GetThrottleInput() * 1, 3);
 		}
+
 	}
 }
 
 float AMyProjectPawn::MultiplyTorque(float GearTorque)
 {
 	return GetVehicleMovementComponent()->GetThrottleInput() * 1000 * GearTorque;
-}
-
-void AMyProjectPawn::ReloadBoost()
-{
-	if (IsDrifting && GetVelocity().Size() > 50)
-		{
-			BoostMeter += BoostRechargeRate;
-			if (BoostMeter > BoostMax)  
-			{
-				BoostMeter = BoostMax;  
-			}
-		}
 }
 
 void AMyProjectPawn::Steering(const FInputActionValue& Value)
@@ -285,14 +261,12 @@ void AMyProjectPawn::Brake(const FInputActionValue& Value)
 void AMyProjectPawn::StartBrake(const FInputActionValue& Value)
 {
 	// call the Blueprint hook for the break lights
-	
 	BrakeLights(true);
 }
 
 void AMyProjectPawn::StopBrake(const FInputActionValue& Value)
 {
 	// call the Blueprint hook for the break lights
-	
 	BrakeLights(false);
 
 	// reset brake input to zero
@@ -303,7 +277,7 @@ void AMyProjectPawn::StartHandbrake(const FInputActionValue& Value)
 {
 	// add the input
 	ChaosVehicleMovement->SetHandbrakeInput(true);
-	IsDrifting = true;
+
 	// call the Blueprint hook for the break lights
 	BrakeLights(true);
 }
@@ -312,7 +286,7 @@ void AMyProjectPawn::StopHandbrake(const FInputActionValue& Value)
 {
 	// add the input
 	ChaosVehicleMovement->SetHandbrakeInput(false);
-	IsDrifting = false;
+
 	// call the Blueprint hook for the break lights
 	BrakeLights(false);
 }
@@ -353,8 +327,6 @@ void AMyProjectPawn::ResetVehicle(const FInputActionValue& Value)
 
 	UE_LOG(LogTemplateVehicle, Error, TEXT("Reset Vehicle"));
 }
-
-
 
 void AMyProjectPawn::Boost(const FInputActionValue& Value)
 {
@@ -419,16 +391,28 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 
 void AMyProjectPawn::ActivateBoost(const FInputActionValue& Value)
 {
+	GEngine->AddOnScreenDebugMessage(1, 5, FColor::Red, "Boost");
 	bStopsBoosting = false;
 
 	SetBoostingInput(true);
+
+	PlayBoostSound();
 }
 
-
+void AMyProjectPawn::PlayBoostSound()
+{
+	BoostAudioComponent->Play();
+}
+void AMyProjectPawn::StopBoostSound()
+{
+	BoostAudioComponent->Stop();
+}
 void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 {
 	bStopsBoosting = true;
 	SetBoostingInput(false);
+
+	StopBoostSound();
 	// Stop particles
 	BoostParticlesLeft->Deactivate();
 
@@ -459,6 +443,13 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 		bStopsBoosting = false;
 	}
 }
+void AMyProjectPawn::SetPauseMenu(const FInputActionValue& Value)
+{
+	
+}
+
+
+
 
 
 #undef LOCTEXT_NAMESPACE
