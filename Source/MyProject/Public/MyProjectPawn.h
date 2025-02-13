@@ -215,5 +215,7 @@ private:
 
 	FVector RespawnLocation;
 
+	UPROPERTY(EditAnywhere, Category="DeadZone")
+	float DeadZonCar;
 	
 };

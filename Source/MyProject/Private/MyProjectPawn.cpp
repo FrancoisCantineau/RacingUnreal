@@ -214,37 +214,72 @@ void AMyProjectPawn::ReloadBoost()
 }
 
 void AMyProjectPawn::Steering(const FInputActionValue& Value)
-{
-	float SteeringValue = Value.Get<float>();
-	float ResultDot;
-	if (USkeletalMeshComponent* VehicleMesh = GetMesh())
+ {
+ 	float SteeringValue = Value.Get<float>();
+ 	float ResultDot;
+ 	if (USkeletalMeshComponent* VehicleMesh = GetMesh())
+ 	{
+ 		FVector Velocity = VehicleMesh->GetComponentVelocity();
+ 		FVector NormalizedVelocity = Velocity.IsNearlyZero() ? FVector::ZeroVector : Velocity.GetSafeNormal();
+ 		FVector RightVector = VehicleMesh->GetRightVector().GetSafeNormal();
+ 		ResultDot = FVector::DotProduct(NormalizedVelocity, RightVector);
+ 	}
+ 
+	float SteeringFactor = 1.f - FMath::Clamp(FMath::Abs(ResultDot), 0.f, 0.7f);
+
+	// Ajouter une zone morte pour éviter les corrections trop brusques
+	if (FMath::Abs(ResultDot) < DeadZonCar) 
 	{
-		FVector Velocity = VehicleMesh->GetComponentVelocity();
-		FVector NormalizedVelocity = Velocity.IsNearlyZero() ? FVector::ZeroVector : Velocity.GetSafeNormal();
-		FVector RightVector = VehicleMesh->GetRightVector().GetSafeNormal();
-		ResultDot = FVector::DotProduct(NormalizedVelocity, RightVector);
+		ResultDot = 0.f; // Forcer la voiture à rester droite
 	}
 
-	// add the input
-	ChaosVehicleMovement->SetSteeringInput(ResultDot *1 + SteeringValue);
-}
+	float SmoothedSteering = FMath::FInterpTo(ChaosVehicleMovement->GetSteeringInput(), ResultDot * SteeringFactor + SteeringValue, GetWorld()->DeltaTimeSeconds, 5.f);
+	ChaosVehicleMovement->SetSteeringInput(SmoothedSteering);
+
+ }
 
 void AMyProjectPawn::Throttle(const FInputActionValue& Value)
 {
 	// get the input magnitude for the throttle
 	float ThrottleValue = Value.Get<float>();
+	// Définir la valeur de la dead zone (par exemple 0.1)
+	const float DeadZone = 0.4f;
 
-	// add the input
-	ChaosVehicleMovement->SetThrottleInput(ThrottleValue);
+	// Vérifie si l'input dépasse la dead zone
+	if (Value.Get<float>() > DeadZone)
+	{
+		// Si l'input est plus grand que la dead zone, applique la logique du throttle
+		// Ici tu peux mettre la logique de mouvement du véhicule par exemple
+		ChaosVehicleMovement->SetThrottleInput(ThrottleValue);
+	}
+	else
+	{
+		// Sinon, tu peux décider de ne rien faire ou de mettre la vitesse à 0
+		ChaosVehicleMovement->SetThrottleInput(0);
+	}
 }
+
+
 
 void AMyProjectPawn::Brake(const FInputActionValue& Value)
 {
 	// get the input magnitude for the brakes
 	float BreakValue = Value.Get<float>();
+	const float DeadZone = 0.4f;
 
+	// Vérifie si l'input dépasse la dead zone
+	if (Value.Get<float>() > DeadZone)
+	{
+		// Si l'input est plus grand que la dead zone, applique la logique du throttle
+		// Ici tu peux mettre la logique de mouvement du véhicule par exemple
+		ChaosVehicleMovement->SetBrakeInput(BreakValue);
+	}
+	else
+	{
+		ChaosVehicleMovement->SetBrakeInput(0);
+	}
 	// add the input
-	ChaosVehicleMovement->SetBrakeInput(BreakValue);
+	
 }
 
 void AMyProjectPawn::StartBrake(const FInputActionValue& Value)
