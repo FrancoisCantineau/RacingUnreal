@@ -2,12 +2,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MyBlockingBarrier.h"
+#include "MyPauseWidget.h"
 #include "GameFramework/GameModeBase.h"
 #include "MyProjectUI.h"
 #include "MyProjectGameMode.generated.h"
 
 
-class ACheckPoint;
 UCLASS(MinimalAPI)
 class AMyProjectGameMode : public AGameModeBase
 {
@@ -21,6 +22,7 @@ public:
 	virtual void Tick(float Delta) override;
 	
 	/** Launch race and timer */
+	UFUNCTION(BlueprintCallable, Category = "UI")
 	void StartRace();
 
 	/** Stop race timer for the participant */
@@ -32,18 +34,17 @@ public:
 	/** Get vehicule UI*/
 	UMyProjectUI* GetRaceUI();
 
-	void ValidCheckpoint();
-	
-	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
-	bool IsPreviousCheckpointValid( int32 id);
-	bool AllTrue();
-	void ResetCheckpoint();
-	void UpdateCheckPoint();
-	void AddLap();
-	bool GetEndGame();
+	/** Current lap information*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
+	int32 CurrentLap;
 
-	
-	
+	/** Overall amount of laps*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
+	int32 TotalLaps;
+
+	/** Manage pause menu*/
+	void TogglePause();
+
 private :
 	
 	/** Gather every car on the map and associate a timer to each of them */
@@ -51,14 +52,20 @@ private :
 	
 	bool bRaceStarted = false;
 	float StartTime = 0.0f;
-	TArray<ACheckPoint*> Checkpoints;
 
-	int CurrentLap = 0;
-	int TotalLaps = 3;
+	/** Increment lap current amount*/
+	void IncrementLap();
 
-	bool EndGame = false;
-	FVector RespawnLocation;
-	FRotator RespawnRotation;
+	/** Update blocking barriers position*/
+	void UpdateBarriers();
+
+	/** Array for every blocking barrier*/
+	TArray<AMyBlockingBarrier*> Barriers;
+
+	
+
+	
+
 	
 };
 

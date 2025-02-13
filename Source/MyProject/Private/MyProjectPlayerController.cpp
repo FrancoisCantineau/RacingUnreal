@@ -4,6 +4,7 @@
 #include "MyProjectPlayerController.h"
 #include "MyProjectPawn.h"
 #include "MyProjectUI.h"
+#include "MyPauseWidget.h"
 #include "EnhancedInputSubsystems.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 
@@ -17,6 +18,9 @@ void AMyProjectPlayerController::BeginPlay()
 	check(VehicleUI);
 
 	VehicleUI->AddToViewport();
+
+	VehicleUI->SetVisibility(ESlateVisibility::Hidden);
+	
 }
 
 void AMyProjectPlayerController::SetupInputComponent()
@@ -28,6 +32,16 @@ void AMyProjectPlayerController::SetupInputComponent()
 	{
 		// add the mapping context so we get controls
 		Subsystem->AddMappingContext(InputMappingContext, 0);
+	}
+}
+
+void AMyProjectPlayerController::ActivateUI()
+{
+	// Logique pour activer l'UI ou faire ce que tu veux à la fin du décompte
+	// Par exemple :
+	if (VehicleUI)
+	{
+		VehicleUI->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
@@ -50,3 +64,5 @@ void AMyProjectPlayerController::OnPossess(APawn* InPawn)
 	// get a pointer to the controlled pawn
 	VehiclePawn = CastChecked<AMyProjectPawn>(InPawn);
 }
+
+

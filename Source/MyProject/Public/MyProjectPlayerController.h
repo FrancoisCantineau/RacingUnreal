@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class AMyProjectPawn;
 class UMyProjectUI;
+class UMyPauseWidget;
 
 /**
  *  Vehicle Player Controller class
@@ -33,9 +34,14 @@ protected:
 	TSubclassOf<UMyProjectUI> VehicleUIClass;
 
 	/** Pointer to the UI widget */
+	UPROPERTY(BlueprintReadWrite, Category = UI)
 	TObjectPtr<UMyProjectUI> VehicleUI;
 
 	// Begin Actor interface
+
+
+	
+	
 protected:
 
 	virtual void BeginPlay() override;
@@ -51,10 +57,18 @@ public:
 
 	//Returns Vehicule UI
 	UMyProjectUI* GetVehicleUI() const { return VehicleUI; }
+
+	// Activate UI
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void ActivateUI();
+
 	
 protected:
 
 	virtual void OnPossess(APawn* InPawn) override;
 
 	// End PlayerController interface
+
+		
+	
 };
