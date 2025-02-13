@@ -9,8 +9,8 @@ UMyProjectWheelRear::UMyProjectWheelRear()
 	AxleType = EAxleType::Rear;
 	bAffectedByHandbrake = true;
 	bAffectedByEngine = true;
-	CorneringStiffness = 250.f;
-	FrictionForceMultiplier = 2.f;
-	MaxWheelspinRotation = 25000.f;
+	FrictionForceMultiplier = 2.6f; 
+    CorneringStiffness = 270.f;
+	MaxWheelspinRotation = 20000.f;
 	ExternalTorqueCombineMethod = ETorqueCombineMethod::Additive;
 }

@@ -219,5 +219,7 @@ private:
 	bool IsMenuActive = false;
 	
 
+	UPROPERTY(EditAnywhere, Category="DeadZone")
+	float DeadZonCar;
 	
 };
