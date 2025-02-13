@@ -34,14 +34,14 @@ public:
 	/** Get vehicule UI*/
 	UMyProjectUI* GetRaceUI();
 
-	/** Current lap information*/
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
-	int32 CurrentLap;
+	/** Returns Current lap */
+	int32 GetCurrentLap(){ return CurrentLap; };
 
-	/** Overall amount of laps*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
-	int32 TotalLaps;
+	/** Returns Total lap*/
+	int32 GetTotalLap(){ return TotalLaps;};
 
+	
+	
 	/** Manage pause menu*/
 	void TogglePause();
 
@@ -56,6 +56,10 @@ public:
 
 
 private :
+
+
+	
+
 	
 	/** Gather every car on the map and associate a timer to each of them */
 	TMap<AActor*, float> RaceTimers; 
@@ -78,7 +82,14 @@ private :
 
 	
 
-	
+protected:
+	/** Current lap information*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
+	int32 CurrentLap;
+
+	/** Overall amount of laps*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
+	int32 TotalLaps;
 
 	
 };

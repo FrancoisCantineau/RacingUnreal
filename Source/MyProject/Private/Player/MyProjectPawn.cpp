@@ -212,6 +212,7 @@ void AMyProjectPawn::ReloadBoost()
 {
 	if (IsDrifting && GetVelocity().Size() > 50)
 	{
+		bCanBoost = true;
 		BoostMeter += BoostRechargeRate;
 		if (BoostMeter > BoostMax)
 		{

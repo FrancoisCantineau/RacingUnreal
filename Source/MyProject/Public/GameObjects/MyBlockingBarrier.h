@@ -11,7 +11,8 @@ enum class EBarrierState : uint8
 {
 	Begin UMETA(DisplayName = "Begin"),
 	Mid UMETA(DisplayName = "Mid"),
-	End UMETA(DisplayName = "End")
+	End UMETA(DisplayName = "End"),
+	All UMETA(DisplayName = "All")
 };
 
 UCLASS()

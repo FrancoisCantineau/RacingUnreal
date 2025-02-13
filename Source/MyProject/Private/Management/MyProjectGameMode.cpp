@@ -199,11 +199,13 @@ void AMyProjectGameMode::AddLap()
 	CurrentLap++;
 	if( CurrentLap < TotalLaps )
 	{
+		
 		ResetCheckpoint();
 		UpdateCheckPoint();
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(1, 2, FColor::Red, "End");
 		if (AllTrue())
 		{
 			EndGame = true;
