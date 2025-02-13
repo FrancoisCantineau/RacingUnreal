@@ -6,6 +6,8 @@
 #include "MyProjectPlayerController.h"
 #include "MyProjectPawn.h"
 #include "EngineUtils.h"
+#include "MyGameInstance.h"
+#include "MyLocalPlayerSaveGame.h"
 #include "GameFramework/GameSession.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -17,6 +19,11 @@ void AMyProjectGameMode::BeginPlay()
 
 	ValidCheckpoint();
 	UpdateCheckPoint();
+	/*UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (MyGameInstance)
+	{
+		MyGameInstance->LoadPlayerData();
+	}*/
 }
 
 
@@ -49,7 +56,16 @@ void AMyProjectGameMode::StopRace(AActor* Participant)
 	// Set the end time for the participant in the map
 	float EndTime = GetWorld()->GetTimeSeconds();
 	RaceTimers[Participant] = EndTime - StartTime;
-
+	UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (MyGameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("fffqdqqzfefsfqdqz"));
+		MyGameInstance->AddPlayer(TEXT("P0izon"), EndTime);
+		MyGameInstance->AddPlayer(TEXT("PZ"), 12);
+		MyGameInstance->AddPlayer(TEXT("QLF"), 1);
+		MyGameInstance->AddPlayer(TEXT("PNl"), 3);
+		MyGameInstance->GetClassement();
+	}
 	// Check if the car is the one controlled by the player
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 	if (PlayerController && Participant == PlayerController->GetPawn())
@@ -148,6 +164,8 @@ bool AMyProjectGameMode::GetEndGame()
 {
 	return EndGame;
 }
+
+
 
 
 

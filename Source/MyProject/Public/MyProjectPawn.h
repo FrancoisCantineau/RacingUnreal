@@ -93,11 +93,16 @@ protected:
 
 	/** Boost comsumption over second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
-	float BoostConsumption = 40.0f; 
+	float BoostConsumption = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	float BoostMax =100.0f;
+	
+	bool IsDrifting = false;
 
 	/** Boost recharge rate over second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
-	float BoostRechargeRate = 10.0f; 
+	float BoostRechargeRate = 5.0f; 
 
 	UFUNCTION(BlueprintCallable, Category = "Boost")
 	void SetBoostingInput(bool bIsBoostingP){ bIsBoosting = bIsBoostingP; };
@@ -131,14 +136,15 @@ public:
 	// End Pawn interface
 
 	// Begin Actor interface
-
+	virtual void BeginPlay() override;
 	virtual void Tick(float Delta) override;
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
 	void SetRespawnLocation(FVector _RespawnLocation);
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
 	FVector GetRespawnLocation() const { return RespawnLocation; }
-	//UFUNCTION(BlueprintCallable, Category = "MonCategorie")
-	//void SetRespawnRotation(FVector _RespawnRotation);
+
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void ReloadBoost();
 
 	// End Actor interface
 
@@ -187,6 +193,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
 	UNiagaraComponent* BoostParticlesRight;
 
+
+
 	
 
 public:
@@ -206,6 +214,6 @@ private:
 	/** Returns the boost value */
 
 	FVector RespawnLocation;
-	FRotator RespawnRotation;
+
 	
 };
