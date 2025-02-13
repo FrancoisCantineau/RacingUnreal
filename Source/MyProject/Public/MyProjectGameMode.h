@@ -6,6 +6,7 @@
 #include "MyProjectUI.h"
 #include "MyProjectGameMode.generated.h"
 
+
 class ACheckPoint;
 UCLASS(MinimalAPI)
 class AMyProjectGameMode : public AGameModeBase
@@ -41,7 +42,7 @@ public:
 	void AddLap();
 	bool GetEndGame();
 
-	void RespawnPlayer(AController* Controller, FVector _SpawnLocation, FRotator _SpawnRotation);
+	
 	
 private :
 	
@@ -58,6 +59,7 @@ private :
 	bool EndGame = false;
 	FVector RespawnLocation;
 	FRotator RespawnRotation;
+	
 };
 
 

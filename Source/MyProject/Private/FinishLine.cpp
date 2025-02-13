@@ -38,14 +38,15 @@ void AFinishLine::OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor*
 	{
 
 		AMyProjectGameMode* GM = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
-		if (GM->AllTrue())
+		GM->StopRace(OtherActor);
+		/*if (GM->AllTrue())
 		{
 			GM->AddLap();
 			if (GM->GetEndGame())
 			{
 				GM->StopRace(OtherActor);
 			}
-		}
+		}*/
 		
 		
 		
