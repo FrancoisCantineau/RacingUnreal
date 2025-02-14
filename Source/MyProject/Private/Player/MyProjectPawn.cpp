@@ -59,11 +59,35 @@ AMyProjectPawn::AMyProjectPawn()
 	// get the Chaos Wheeled movement component
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 
-	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticles"));
-	BoostParticlesLeft->SetupAttachment(RootComponent);  
+	// Configure Niagara for drift
+	LeftDriftFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("LeftDriftFX"));
+	LeftDriftFX->SetupAttachment(RootComponent);
+	LeftDriftFX->SetAutoActivate(false);
+	
+	// Configure Niagara for drift
+	RightDriftFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RightDriftFX"));
+	RightDriftFX->SetupAttachment(RootComponent);
+	RightDriftFX->SetAutoActivate(false);  
 
+	// Configure Niagara for boost
+	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticlesLeft"));
+	BoostParticlesLeft->SetupAttachment(RootComponent);
+	BoostParticlesLeft->SetAutoActivate(false);
+
+	// Configure Niagara for boost
+	BoostParticlesRight = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticlesRight"));
+	BoostParticlesRight->SetupAttachment(RootComponent);
+	BoostParticlesRight->SetAutoActivate(false);
+
+	// Configure Audio for boost
 	BoostAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 	BoostAudioComponent->SetupAttachment(RootComponent);
+
+	// Configure audio for drift
+	DriftAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("DriftAudioComponent"));
+	DriftAudioComponent->SetupAttachment(RootComponent);
+	DriftAudioComponent->bAutoActivate = false;
+	
 	
 }
 
@@ -136,6 +160,10 @@ void AMyProjectPawn::Tick(float Delta)
 		DeactivateBoost(FInputActionValue());
 	}
 	ReloadBoost();
+	if (!IsGrounded && IsDrifting)
+	{
+		StopDrift();
+	}
 }
 void AMyProjectPawn::BeginPlay()
 {
@@ -304,24 +332,67 @@ void AMyProjectPawn::StopBrake(const FInputActionValue& Value)
 	// reset brake input to zero
 	ChaosVehicleMovement->SetBrakeInput(0.0f);
 }
+void AMyProjectPawn::SetIsGrounded(bool state)
+{
+	IsGrounded = state;
+}
 
 void AMyProjectPawn::StartHandbrake(const FInputActionValue& Value)
 {
+	if (IsGrounded)
+	{
 	// add the input
+		
 	ChaosVehicleMovement->SetHandbrakeInput(true);
 	IsDrifting=true;
 	// call the Blueprint hook for the break lights
+
+	// Get vehicle speed
+	float Speed = GetVelocity().Size(); // Speed in cm/s
+	
+	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, 
+				FString::Printf(TEXT("Vitesse : %.2f cm/s"), Speed));
+	if (Speed > SpeedTreshold)
+	{
+		// Actovate Niagara
+		if (LeftDriftFX && RightDriftFX)
+		{
+			LeftDriftFX->Activate();
+			RightDriftFX->Activate();
+		}
+
+		//Activate Drift Sound effect
+		if (DriftSound && !DriftAudioComponent->IsPlaying())
+		{
+			DriftAudioComponent->SetSound(DriftSound);
+			DriftAudioComponent->Play();
+		}
+	}
 	BrakeLights(true);
+	}
 }
 
 void AMyProjectPawn::StopHandbrake(const FInputActionValue& Value)
 {
-	// add the input
+	StopDrift();
+}
+
+void AMyProjectPawn::StopDrift()
+{
+	//Logic to stop drifting
+	
+	IsDrifting = false;
 	ChaosVehicleMovement->SetHandbrakeInput(false);
 
-	IsDrifting=false;
-	
-	// call the Blueprint hook for the break lights
+	if (LeftDriftFX && RightDriftFX)
+	{
+		LeftDriftFX->Deactivate();
+		RightDriftFX->Deactivate();
+	}
+	if (DriftAudioComponent->IsPlaying())
+	{
+		DriftAudioComponent->Stop();
+	}
 	BrakeLights(false);
 }
 
@@ -417,6 +488,7 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 
 			// Particles manager
 			BoostParticlesLeft->Activate();
+			BoostParticlesRight->Activate();
 		}
 	}
 	
@@ -449,6 +521,7 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 	StopBoostSound();
 	// Stop particles
 	BoostParticlesLeft->Deactivate();
+	BoostParticlesRight->Deactivate();
 
 	// Reset camera position
 	

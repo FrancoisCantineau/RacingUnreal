@@ -44,15 +44,81 @@ UMyProjectUI* AMyProjectGameMode::GetRaceUI()
 void AMyProjectGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetupCheckPoint();
+	
 	ValidCheckpoint();
 	UpdateCheckPoint();
 
 }
 
+void AMyProjectGameMode::SetupCheckPoint()
+{
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACheckPoint::StaticClass(), FoundActors);
+	
+
+    if (FoundActors.Num() == 0)
+    {
+        return;
+    }
+
+    TArray<ACheckPoint*> BeginCheckpoints;
+    TArray<ACheckPoint*> AllCheckpoints;
+    TArray<ACheckPoint*> MidCheckpoints;
+    TArray<ACheckPoint*> EndCheckpoints;
+
+    for (AActor* Actor : FoundActors) 
+    {
+        
+        ACheckPoint* Checkpoint = Cast<ACheckPoint>(Actor);
+        if (!Checkpoint) continue;
+
+        FString FolderName = Actor->GetFolderPath().ToString();
+        FolderName = FolderName.RightChop(FolderName.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromEnd) + 1);
+
+        ECheckPointState CheckpointState = ConvertStringToState(FolderName);
+        Checkpoint->SetState(CheckpointState);
+
+        switch (CheckpointState)
+        {
+            case ECheckPointState::Begin: BeginCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::All:   AllCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::Mid:   MidCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::End:   EndCheckpoints.Add(Checkpoint); break;
+            default: break;
+        }
+    }
+
+    TArray<ACheckPoint*> OrderedCheckpoints;
+    OrderedCheckpoints.Append(BeginCheckpoints);
+    OrderedCheckpoints.Append(AllCheckpoints);
+    OrderedCheckpoints.Append(MidCheckpoints);
+    OrderedCheckpoints.Append(EndCheckpoints);
+
+    int32 CurrentID = 0;
+    for (ACheckPoint* Checkpoint : OrderedCheckpoints)
+    {
+        Checkpoint->SetId(CurrentID);
+        CurrentID++;
+    }
+	
+}
+
+
+ECheckPointState AMyProjectGameMode:: ConvertStringToState(const FString& FolderName)
+{
+	if (FolderName.Equals("Begin", ESearchCase::IgnoreCase)) return ECheckPointState::Begin;
+	if (FolderName.Equals("Mid", ESearchCase::IgnoreCase)) return ECheckPointState::Mid;
+	if (FolderName.Equals("End", ESearchCase::IgnoreCase)) return ECheckPointState::End;
+	
+	return ECheckPointState::All; 
+}
+
 
 void AMyProjectGameMode::StartRace()
 {
-	GEngine->AddOnScreenDebugMessage(1, 5, FColor::Red, "Race");
 	if (!GetWorld()) return;
 
 	StartTime = GetWorld()->GetTimeSeconds();
@@ -109,6 +175,24 @@ float AMyProjectGameMode::GetRaceTime(AActor* Participant) const
 		return RaceTimers[Participant];
 	}
 	return -1.0f;
+}
+
+FString AMyProjectGameMode::GetRaceTimeFormated(AActor* Participant) const
+{
+	if (RaceTimers.Contains(Participant))
+	{
+		float NewTime = GetRaceTime(Participant);// Calcul des minutes, secondes et centièmes
+		int32 Minutes = FMath::FloorToInt(NewTime / 60);
+		int32 Seconds = FMath::FloorToInt(NewTime) % 60;
+		int32 Centiseconds = FMath::FloorToInt((NewTime - FMath::FloorToInt(NewTime)) * 100);
+
+		// Formatage du chrono en string
+		FString FormattedTime = FString::Printf(TEXT("%02d:%02d:%02d"), Minutes, Seconds, Centiseconds);
+
+		// Appel de l'event Blueprint pour afficher le chrono
+		return FormattedTime;
+	}
+	return TEXT("");
 }
 
 void AMyProjectGameMode::IncrementLap()
@@ -205,7 +289,7 @@ void AMyProjectGameMode::AddLap()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(1, 2, FColor::Red, "End");
+		GEngine->AddOnScreenDebugMessage(1, 2, FColor::Red, "End	");
 		if (AllTrue())
 		{
 			EndGame = true;

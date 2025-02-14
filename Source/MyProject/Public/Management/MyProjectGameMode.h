@@ -6,9 +6,10 @@
 #include "UI/MyPauseWidget.h"
 #include "GameFramework/GameModeBase.h"
 #include "UI/MyProjectUI.h"
+#include "GameObjects/CheckPoint.h"  
 #include "MyProjectGameMode.generated.h"
 
-class ACheckPoint;
+
 UCLASS(MinimalAPI)
 class AMyProjectGameMode : public AGameModeBase
 {
@@ -26,10 +27,16 @@ public:
 	void StartRace();
 
 	/** Stop race timer for the participant */
+	UFUNCTION(BlueprintCallable, Category = "UI")
 	void StopRace(AActor* Participant);
 
 	/** Get race timer for the participant */
+	UFUNCTION(BlueprintCallable, Category = "UI")
 	float GetRaceTime(AActor* Participant) const;
+
+	/** Get race timer formated for the participant */
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	FString GetRaceTimeFormated(AActor* Participant) const;
 
 	/** Get vehicule UI*/
 	UMyProjectUI* GetRaceUI();
@@ -58,7 +65,7 @@ public:
 private :
 
 
-	
+	void SetupCheckPoint();
 
 	
 	/** Gather every car on the map and associate a timer to each of them */
@@ -80,6 +87,8 @@ private :
 	/** Array for every blocking barrier*/
 	TArray<AMyBlockingBarrier*> Barriers;
 
+
+	ECheckPointState ConvertStringToState(const FString& FolderName);
 	
 
 protected:

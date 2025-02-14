@@ -27,19 +27,24 @@ UCLASS()
 class MYPROJECT_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+
 	
 public:
 
+	
+	
 	UMyGameInstance(){};
 
 	virtual void Init()override{} ;
-	
+
+	UFUNCTION(BlueprintCallable)
 	void AddPlayer(const FString& Pseudo, float NewScore);
 
 	void TriArray(TArray<FPlayerScore>& _PlayerScores);
 
 	void SavePlayerData(const TArray<FPlayerScore>& ArrayToSave);
-
+	
+	UFUNCTION(BlueprintCallable)
 	void RemovePlayerDataByName(const FString& PlayerName);
 
 	TArray<FPlayerScore> LoadPlayerData();

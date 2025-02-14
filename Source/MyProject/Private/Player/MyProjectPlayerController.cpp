@@ -21,7 +21,7 @@ void AMyProjectPlayerController::BeginPlay()
 
 	VehicleUI->AddToViewport();
 
-	VehicleUI->SetVisibility(ESlateVisibility::Hidden);
+	ActivateUI(false);
 	
 }
 
@@ -37,13 +37,21 @@ void AMyProjectPlayerController::SetupInputComponent()
 	}
 }
 
-void AMyProjectPlayerController::ActivateUI()
+void AMyProjectPlayerController::ActivateUI(bool state)
 {
 	// Logique pour activer l'UI ou faire ce que tu veux à la fin du décompte
 	// Par exemple :
 	if (VehicleUI)
 	{
-		VehicleUI->SetVisibility(ESlateVisibility::Visible);
+		if (state)
+		{
+			VehicleUI->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			VehicleUI->SetVisibility(ESlateVisibility::Hidden);
+		}
+		
 	}
 }
 

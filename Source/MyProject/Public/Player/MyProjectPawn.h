@@ -54,6 +54,10 @@ class AMyProjectPawn : public AWheeledVehiclePawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Boost, meta = (AllowPrivateAccess = "true"))
 	UAudioComponent* BoostAudioComponent;
 
+/** Audio Component Drift */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Drift, meta = (AllowPrivateAccess = "true"))
+	UAudioComponent* DriftAudioComponent;
+
 protected:
 
 	/** Steering Action */
@@ -155,6 +159,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float Delta) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Speed")
+	float SpeedTreshold = 200.0f;
+
 	// End Actor interface
 
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
@@ -165,6 +172,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boost")
 	void ReloadBoost();
+
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void SetIsGrounded(bool state);
 
 protected:
 
@@ -191,6 +201,7 @@ protected:
 	/** Handles handbrake start/stop inputs */
 	void StartHandbrake(const FInputActionValue& Value);
 	void StopHandbrake(const FInputActionValue& Value);
+	void StopDrift();
 
 	/** Handles look around input */
 	void LookAround(const FInputActionValue& Value);
@@ -213,6 +224,20 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects")
 	UNiagaraComponent* BoostParticlesRight;
+
+	UPROPERTY(EditAnywhere, Category="FX")
+	UNiagaraComponent* LeftDriftFX;
+
+	UPROPERTY(EditAnywhere, Category="FX")
+	UNiagaraComponent* RightDriftFX;
+
+	bool IsGrounded = true;
+
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	USoundBase* DriftSound;
+
+	
+
 
 	
 
