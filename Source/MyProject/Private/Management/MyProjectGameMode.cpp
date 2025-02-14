@@ -49,7 +49,8 @@ void AMyProjectGameMode::BeginPlay()
 	
 	ValidCheckpoint();
 	UpdateCheckPoint();
-
+	UpdateCheckpointOrder();
+	bUseTempCheckpoints = false;
 }
 
 void AMyProjectGameMode::SetupCheckPoint()
@@ -203,31 +204,37 @@ void AMyProjectGameMode::IncrementLap()
 
 void AMyProjectGameMode::UpdateBarriers()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Updating Barriers"));
+
 	for (AMyBlockingBarrier* Barrier : Barriers)
 	{
 		if (!Barrier) continue;
 
-		bool bShouldBeActive = true;//default is true, set to be hidden
+		bool bShouldBeActive = false; // Par défaut, on désactive tout
 
 		switch (Barrier->BarrierState)
 		{
 		case EBarrierState::Begin:
-			bShouldBeActive = (CurrentLap ==0) ;
+			bShouldBeActive = (CurrentLap == 0); // Actif uniquement au premier tour
 			break;
+
 		case EBarrierState::Mid:
-			bShouldBeActive = (CurrentLap >= 2 && CurrentLap < TotalLaps);
+			bShouldBeActive = (CurrentLap > 0 && CurrentLap < TotalLaps - 1); // Actif entre le premier et le dernier tour
 			break;
+
 		case EBarrierState::End:
-			bShouldBeActive = (CurrentLap >= TotalLaps);
+			bShouldBeActive = (CurrentLap == TotalLaps - 1); // Actif uniquement au dernier tour
 			break;
+		
 		}
 
-		// activate or desactivate barrier
+		// Appliquer la visibilité et les collisions
 		Barrier->SetActorHiddenInGame(bShouldBeActive);
 		Barrier->SetActorEnableCollision(!bShouldBeActive);
+
 	}
-	
 }
+
 bool AMyProjectGameMode::AllTrue()
 {
 	for (ACheckPoint* Checkpoint : Checkpoints)
@@ -251,32 +258,44 @@ void AMyProjectGameMode::ResetCheckpoint()
 
 void AMyProjectGameMode::UpdateCheckPoint()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Updating Checkpoints"));
 
 	for (ACheckPoint* Checkpoint : Checkpoints)
 	{
 		if (!Checkpoint) continue;
 
-		bool bShouldBeActive = true;//default is true, set to be hidden
+		bool bShouldBeActive = false; 
 
 		switch (Checkpoint->GetState())
 		{
 		case ECheckPointState::Begin:
-			bShouldBeActive = (CurrentLap ==0) ;
+			bShouldBeActive = (CurrentLap == 0);
+			
 			break;
+
 		case ECheckPointState::Mid:
-			bShouldBeActive = (CurrentLap >= 2 && CurrentLap < TotalLaps);
+			bShouldBeActive = (CurrentLap > 0 && CurrentLap < TotalLaps - 1);
+			
 			break;
+
 		case ECheckPointState::End:
-			bShouldBeActive = (CurrentLap >= TotalLaps);
+			bShouldBeActive = (CurrentLap == TotalLaps - 1);
+			break;
+
+		case ECheckPointState::All:
+			bShouldBeActive = !(CurrentLap == TotalLaps - 1);
 			break;
 		}
-
-		// activate or desactivate and skip or not checkpoint
+		
+		FString DebugMessage = FString::Printf(TEXT("Checkpoint State: %d | CurrentLap: %d | TotalLaps: %d | bShouldBeActive: %d"),
+		   static_cast<int>(Checkpoint->GetState()), CurrentLap, TotalLaps, bShouldBeActive);
+		// Appliquer la visibilité et les collisions
 		Checkpoint->SetActorHiddenInGame(!bShouldBeActive);
 		Checkpoint->SetActorEnableCollision(bShouldBeActive);
 		Checkpoint->SetIsEnter(!bShouldBeActive);
 	}
 }
+
 
 void AMyProjectGameMode::AddLap()
 {
@@ -319,15 +338,15 @@ void AMyProjectGameMode::ValidCheckpoint()
 }
 
 bool AMyProjectGameMode::IsPreviousCheckpointValid(int32 id) {
-	for (ACheckPoint* Checkpoint : Checkpoints) {
-		if (Checkpoint && Checkpoint->GetId() == id) {
-			for (ACheckPoint* PreviousCheckpoint : Checkpoints) {
-				if (PreviousCheckpoint && PreviousCheckpoint->GetId() == id - 1) {
-					if (!PreviousCheckpoint->GetIsEnter()) {
-						UE_LOG(LogTemp, Warning, TEXT("Vous avez sauté le checkpoint précédent !"));
-						return false;
-					}
-					return true;
+	const TArray<ACheckPoint*>& CurrentCheckpoints = bUseTempCheckpoints ? CheckpointsTemp : Checkpoints;
+	
+	for (int i = 0; i < CurrentCheckpoints.Num(); i++) {
+		if (CurrentCheckpoints[i] && CurrentCheckpoints[i]->GetId() == id) {
+			if (i > 0) { // Vérifie s'il y a un checkpoint précédent
+				ACheckPoint* PreviousCheckpoint = CurrentCheckpoints[i - 1];
+				if (PreviousCheckpoint && !PreviousCheckpoint->GetIsEnter()) {
+					UE_LOG(LogTemp, Warning, TEXT("Vous avez sauté le checkpoint précédent !"));
+					return false;
 				}
 			}
 			return true;
@@ -335,4 +354,50 @@ bool AMyProjectGameMode::IsPreviousCheckpointValid(int32 id) {
 	}
 	return false;
 }
+
+
+void AMyProjectGameMode::UpdateCheckpointOrder() {
+	CheckpointsTemp.Empty();
+
+	// Ajouter les checkpoints dans l'ordre défini
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::Mid) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::All) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::Begin) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::End) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+
+	bUseTempCheckpoints = true;
+}
+
+
+void AMyProjectGameMode::VerifySwitch()
+{
+	if ((CurrentLap == 0) || (CurrentLap == TotalLaps - 1))
+	{
+		bUseTempCheckpoints = false ;
+	}
+	else
+	{
+
+		bUseTempCheckpoints = true;
+	}
+}
+
+
+
 

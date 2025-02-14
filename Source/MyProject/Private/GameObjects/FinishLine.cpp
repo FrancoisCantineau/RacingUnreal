@@ -46,16 +46,26 @@ void AFinishLine::OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor*
 	//Check if the actor hit is a car
 	if (AMyProjectPawn* Car = Cast<AMyProjectPawn>(OtherActor))
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Enter");
 
 		AMyProjectGameMode* GM = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
-		GM->StopRace(OtherActor);
+		
 
 		if (GM->AllTrue())
 		{
 			GM->AddLap();
-			if (GM->GetCurrentLap()>= GM->GetTotalLap() && GM->AllTrue())
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Current Lap: %d"), GM->GetCurrentLap()));
+			if (GM->GetCurrentLap() >= GM->GetTotalLap() && GM->AllTrue())
 			{
-				GM->StopRace(OtherActor);
+				//GM->StopRace(OtherActor);
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ca switch"));
+				GM->UpdateBarriers();
+				GM->UpdateCheckPoint();
+				GM->ResetCheckpoint();
+				
 			}
 		}
 		

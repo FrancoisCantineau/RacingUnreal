@@ -40,10 +40,10 @@ public:
 
 	/** Get vehicule UI*/
 	UMyProjectUI* GetRaceUI();
-
+	UFUNCTION(BlueprintCallable, Category = "End")
 	/** Returns Current lap */
 	int32 GetCurrentLap(){ return CurrentLap; };
-
+	UFUNCTION(BlueprintCallable, Category = "End")
 	/** Returns Total lap*/
 	int32 GetTotalLap(){ return TotalLaps;};
 
@@ -55,12 +55,22 @@ public:
 	void ValidCheckpoint();
 	UFUNCTION(BlueprintCallable, Category = "MonCategorie")
 	bool IsPreviousCheckpointValid( int32 id);
+	UFUNCTION(BlueprintCallable, Category = "End")
 	bool AllTrue();
+	UFUNCTION(BlueprintCallable, Category = "End")
 	void ResetCheckpoint();
+	UFUNCTION(BlueprintCallable, Category = "End")
 	void UpdateCheckPoint();
+	UFUNCTION(BlueprintCallable, Category = "End")
 	void AddLap();
-	bool GetEndGame(); 
+	bool GetEndGame();
+	UFUNCTION(BlueprintCallable, Category = "End")
+	/** Update blocking barriers position*/
+	void UpdateBarriers();
 
+	void UpdateCheckpointOrder();
+	UFUNCTION(BlueprintCallable, Category = "NewOrder")
+	void VerifySwitch();
 
 private :
 
@@ -91,6 +101,11 @@ private :
 	ECheckPointState ConvertStringToState(const FString& FolderName);
 	
 
+	
+	/** Array for every blocking barrier*/
+	TArray<AMyBlockingBarrier*> Barriers;
+	TArray<ACheckPoint*> CheckpointsTemp; 
+	bool bUseTempCheckpoints = false;   
 protected:
 	/** Current lap information*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
