@@ -59,11 +59,35 @@ AMyProjectPawn::AMyProjectPawn()
 	// get the Chaos Wheeled movement component
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 
-	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticles"));
-	BoostParticlesLeft->SetupAttachment(RootComponent);  
+	// Configure Niagara for drift
+	LeftDriftFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("LeftDriftFX"));
+	LeftDriftFX->SetupAttachment(RootComponent);
+	LeftDriftFX->SetAutoActivate(false);
+	
+	// Configure Niagara for drift
+	RightDriftFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RightDriftFX"));
+	RightDriftFX->SetupAttachment(RootComponent);
+	RightDriftFX->SetAutoActivate(false);  
 
+	// Configure Niagara for boost
+	BoostParticlesLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticlesLeft"));
+	BoostParticlesLeft->SetupAttachment(RootComponent);
+	BoostParticlesLeft->SetAutoActivate(false);
+
+	// Configure Niagara for boost
+	BoostParticlesRight = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExhaustParticlesRight"));
+	BoostParticlesRight->SetupAttachment(RootComponent);
+	BoostParticlesRight->SetAutoActivate(false);
+
+	// Configure Audio for boost
 	BoostAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 	BoostAudioComponent->SetupAttachment(RootComponent);
+
+	// Configure audio for drift
+	DriftAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("DriftAudioComponent"));
+	DriftAudioComponent->SetupAttachment(RootComponent);
+	DriftAudioComponent->bAutoActivate = false;
+	
 	
 }
 
@@ -136,6 +160,10 @@ void AMyProjectPawn::Tick(float Delta)
 		DeactivateBoost(FInputActionValue());
 	}
 	ReloadBoost();
+	if (!IsGrounded && IsDrifting)
+	{
+		StopDrift();
+	}
 }
 void AMyProjectPawn::BeginPlay()
 {
@@ -304,24 +332,67 @@ void AMyProjectPawn::StopBrake(const FInputActionValue& Value)
 	// reset brake input to zero
 	ChaosVehicleMovement->SetBrakeInput(0.0f);
 }
+void AMyProjectPawn::SetIsGrounded(bool state)
+{
+	IsGrounded = state;
+}
 
 void AMyProjectPawn::StartHandbrake(const FInputActionValue& Value)
 {
+	if (IsGrounded)
+	{
 	// add the input
+		
 	ChaosVehicleMovement->SetHandbrakeInput(true);
 	IsDrifting=true;
 	// call the Blueprint hook for the break lights
+
+	// Get vehicle speed
+	float Speed = GetVelocity().Size(); // Speed in cm/s
+	
+	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, 
+				FString::Printf(TEXT("Vitesse : %.2f cm/s"), Speed));
+	if (Speed > SpeedTreshold)
+	{
+		// Actovate Niagara
+		if (LeftDriftFX && RightDriftFX)
+		{
+			LeftDriftFX->Activate();
+			RightDriftFX->Activate();
+		}
+
+		//Activate Drift Sound effect
+		if (DriftSound && !DriftAudioComponent->IsPlaying())
+		{
+			DriftAudioComponent->SetSound(DriftSound);
+			DriftAudioComponent->Play();
+		}
+	}
 	BrakeLights(true);
+	}
 }
 
 void AMyProjectPawn::StopHandbrake(const FInputActionValue& Value)
 {
-	// add the input
+	StopDrift();
+}
+
+void AMyProjectPawn::StopDrift()
+{
+	//Logic to stop drifting
+	
+	IsDrifting = false;
 	ChaosVehicleMovement->SetHandbrakeInput(false);
 
-	IsDrifting=false;
-	
-	// call the Blueprint hook for the break lights
+	if (LeftDriftFX && RightDriftFX)
+	{
+		LeftDriftFX->Deactivate();
+		RightDriftFX->Deactivate();
+	}
+	if (DriftAudioComponent->IsPlaying())
+	{
+		DriftAudioComponent->Stop();
+	}
 	BrakeLights(false);
 }
 
@@ -402,8 +473,8 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 			FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
     	
 			// Lerp to a new camera location
-			FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
-			FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
+			FVector NewCameraPosition = LerpCameraPosition(CurrentCameraPosition,TargetCameraPosition, 0.1f);
+			FRotator NewCameraRotation = LerpCameraRotation(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
 
 			BackSpringArm->SetRelativeLocation(NewCameraPosition);
 			BackCamera->SetRelativeRotation(NewCameraRotation);
@@ -415,11 +486,36 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 			FVector ShakeOffset = FVector(FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-2.0f, 2.0f));
 			BackSpringArm->SetWorldLocation(BackSpringArm->GetComponentLocation() + ShakeOffset);
 
-			// Particles manager
-			BoostParticlesLeft->Activate();
+			
 		}
 	}
 	
+}
+
+FVector AMyProjectPawn::LerpCameraPosition(FVector originalPostion, FVector targetPosition, float duration)
+{
+	FVector NewPosition = FMath::Lerp(originalPostion, targetPosition, duration); ;
+	return NewPosition;
+}
+FRotator AMyProjectPawn::LerpCameraRotation(FRotator originalRotation, FRotator targetRotation, float duration)
+{
+	FRotator NewRotation = FMath::Lerp(originalRotation, targetRotation, duration); ;
+	return NewRotation;
+}
+
+
+void AMyProjectPawn::PlayBoostParticles()
+{
+	// Particles manager
+	BoostParticlesLeft->Activate();
+	BoostParticlesRight->Activate();
+}
+
+void AMyProjectPawn::StopBoostParticles()
+{
+	// Stop particles
+	BoostParticlesLeft->Deactivate();
+	BoostParticlesRight->Deactivate();
 }
 
 
@@ -430,6 +526,7 @@ void AMyProjectPawn::ActivateBoost(const FInputActionValue& Value)
 
 	SetBoostingInput(true);
 
+	PlayBoostParticles();
 	PlayBoostSound();
 }
 
@@ -446,9 +543,9 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 	bStopsBoosting = true;
 	SetBoostingInput(false);
 
+	StopBoostParticles();
 	StopBoostSound();
-	// Stop particles
-	BoostParticlesLeft->Deactivate();
+
 
 	// Reset camera position
 	
@@ -459,8 +556,8 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 	FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
     	
 	// Lerp to a new camera location
-	FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
-	FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);
+	FVector NewCameraPosition = LerpCameraPosition(CurrentCameraPosition,TargetCameraPosition, 0.1f);
+	FRotator NewCameraRotation = LerpCameraRotation(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
 
 	BackSpringArm->SetRelativeLocation(NewCameraPosition);
 	BackCamera->SetRelativeRotation(NewCameraRotation);

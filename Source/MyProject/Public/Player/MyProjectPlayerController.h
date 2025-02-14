@@ -60,7 +60,9 @@ public:
 
 	// Activate UI
 	UFUNCTION(BlueprintCallable, Category = "UI")
-	void ActivateUI();
+	void ActivateUI(bool state);
+
+	
 
 	
 protected:

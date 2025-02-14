@@ -44,15 +44,82 @@ UMyProjectUI* AMyProjectGameMode::GetRaceUI()
 void AMyProjectGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetupCheckPoint();
+	
 	ValidCheckpoint();
 	UpdateCheckPoint();
+	UpdateCheckpointOrder();
+	bUseTempCheckpoints = false;
+}
 
+void AMyProjectGameMode::SetupCheckPoint()
+{
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACheckPoint::StaticClass(), FoundActors);
+	
+
+    if (FoundActors.Num() == 0)
+    {
+        return;
+    }
+
+    TArray<ACheckPoint*> BeginCheckpoints;
+    TArray<ACheckPoint*> AllCheckpoints;
+    TArray<ACheckPoint*> MidCheckpoints;
+    TArray<ACheckPoint*> EndCheckpoints;
+
+    for (AActor* Actor : FoundActors) 
+    {
+        
+        ACheckPoint* Checkpoint = Cast<ACheckPoint>(Actor);
+        if (!Checkpoint) continue;
+
+        FString FolderName = Actor->GetFolderPath().ToString();
+        FolderName = FolderName.RightChop(FolderName.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromEnd) + 1);
+
+        ECheckPointState CheckpointState = ConvertStringToState(FolderName);
+        Checkpoint->SetState(CheckpointState);
+
+        switch (CheckpointState)
+        {
+            case ECheckPointState::Begin: BeginCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::All:   AllCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::Mid:   MidCheckpoints.Add(Checkpoint); break;
+            case ECheckPointState::End:   EndCheckpoints.Add(Checkpoint); break;
+            default: break;
+        }
+    }
+
+    TArray<ACheckPoint*> OrderedCheckpoints;
+    OrderedCheckpoints.Append(BeginCheckpoints);
+    OrderedCheckpoints.Append(AllCheckpoints);
+    OrderedCheckpoints.Append(MidCheckpoints);
+    OrderedCheckpoints.Append(EndCheckpoints);
+
+    int32 CurrentID = 0;
+    for (ACheckPoint* Checkpoint : OrderedCheckpoints)
+    {
+        Checkpoint->SetId(CurrentID);
+        CurrentID++;
+    }
+	
+}
+
+
+ECheckPointState AMyProjectGameMode:: ConvertStringToState(const FString& FolderName)
+{
+	if (FolderName.Equals("Begin", ESearchCase::IgnoreCase)) return ECheckPointState::Begin;
+	if (FolderName.Equals("Mid", ESearchCase::IgnoreCase)) return ECheckPointState::Mid;
+	if (FolderName.Equals("End", ESearchCase::IgnoreCase)) return ECheckPointState::End;
+	
+	return ECheckPointState::All; 
 }
 
 
 void AMyProjectGameMode::StartRace()
 {
-	GEngine->AddOnScreenDebugMessage(1, 5, FColor::Red, "Race");
 	if (!GetWorld()) return;
 
 	StartTime = GetWorld()->GetTimeSeconds();
@@ -111,6 +178,24 @@ float AMyProjectGameMode::GetRaceTime(AActor* Participant) const
 	return -1.0f;
 }
 
+FString AMyProjectGameMode::GetRaceTimeFormated(AActor* Participant) const
+{
+	if (RaceTimers.Contains(Participant))
+	{
+		float NewTime = GetRaceTime(Participant);// Calcul des minutes, secondes et centièmes
+		int32 Minutes = FMath::FloorToInt(NewTime / 60);
+		int32 Seconds = FMath::FloorToInt(NewTime) % 60;
+		int32 Centiseconds = FMath::FloorToInt((NewTime - FMath::FloorToInt(NewTime)) * 100);
+
+		// Formatage du chrono en string
+		FString FormattedTime = FString::Printf(TEXT("%02d:%02d:%02d"), Minutes, Seconds, Centiseconds);
+
+		// Appel de l'event Blueprint pour afficher le chrono
+		return FormattedTime;
+	}
+	return TEXT("");
+}
+
 void AMyProjectGameMode::IncrementLap()
 {
 	CurrentLap++;
@@ -119,31 +204,37 @@ void AMyProjectGameMode::IncrementLap()
 
 void AMyProjectGameMode::UpdateBarriers()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Updating Barriers"));
+
 	for (AMyBlockingBarrier* Barrier : Barriers)
 	{
 		if (!Barrier) continue;
 
-		bool bShouldBeActive = true;//default is true, set to be hidden
+		bool bShouldBeActive = false; // Par défaut, on désactive tout
 
 		switch (Barrier->BarrierState)
 		{
 		case EBarrierState::Begin:
-			bShouldBeActive = (CurrentLap ==0) ;
+			bShouldBeActive = (CurrentLap == 0); // Actif uniquement au premier tour
 			break;
+
 		case EBarrierState::Mid:
-			bShouldBeActive = (CurrentLap >= 2 && CurrentLap < TotalLaps);
+			bShouldBeActive = (CurrentLap > 0 && CurrentLap < TotalLaps - 1); // Actif entre le premier et le dernier tour
 			break;
+
 		case EBarrierState::End:
-			bShouldBeActive = (CurrentLap >= TotalLaps);
+			bShouldBeActive = (CurrentLap == TotalLaps - 1); // Actif uniquement au dernier tour
 			break;
+		
 		}
 
-		// activate or desactivate barrier
+		// Appliquer la visibilité et les collisions
 		Barrier->SetActorHiddenInGame(bShouldBeActive);
 		Barrier->SetActorEnableCollision(!bShouldBeActive);
+
 	}
-	
 }
+
 bool AMyProjectGameMode::AllTrue()
 {
 	for (ACheckPoint* Checkpoint : Checkpoints)
@@ -167,32 +258,44 @@ void AMyProjectGameMode::ResetCheckpoint()
 
 void AMyProjectGameMode::UpdateCheckPoint()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Updating Checkpoints"));
 
 	for (ACheckPoint* Checkpoint : Checkpoints)
 	{
 		if (!Checkpoint) continue;
 
-		bool bShouldBeActive = true;//default is true, set to be hidden
+		bool bShouldBeActive = false; 
 
 		switch (Checkpoint->GetState())
 		{
 		case ECheckPointState::Begin:
-			bShouldBeActive = (CurrentLap ==0) ;
+			bShouldBeActive = (CurrentLap == 0);
+			
 			break;
+
 		case ECheckPointState::Mid:
-			bShouldBeActive = (CurrentLap >= 2 && CurrentLap < TotalLaps);
+			bShouldBeActive = (CurrentLap > 0 && CurrentLap < TotalLaps - 1);
+			
 			break;
+
 		case ECheckPointState::End:
-			bShouldBeActive = (CurrentLap >= TotalLaps);
+			bShouldBeActive = (CurrentLap == TotalLaps - 1);
+			break;
+
+		case ECheckPointState::All:
+			bShouldBeActive = !(CurrentLap == TotalLaps - 1);
 			break;
 		}
-
-		// activate or desactivate and skip or not checkpoint
+		
+		FString DebugMessage = FString::Printf(TEXT("Checkpoint State: %d | CurrentLap: %d | TotalLaps: %d | bShouldBeActive: %d"),
+		   static_cast<int>(Checkpoint->GetState()), CurrentLap, TotalLaps, bShouldBeActive);
+		// Appliquer la visibilité et les collisions
 		Checkpoint->SetActorHiddenInGame(!bShouldBeActive);
 		Checkpoint->SetActorEnableCollision(bShouldBeActive);
 		Checkpoint->SetIsEnter(!bShouldBeActive);
 	}
 }
+
 
 void AMyProjectGameMode::AddLap()
 {
@@ -205,7 +308,7 @@ void AMyProjectGameMode::AddLap()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(1, 2, FColor::Red, "End");
+		GEngine->AddOnScreenDebugMessage(1, 2, FColor::Red, "End	");
 		if (AllTrue())
 		{
 			EndGame = true;
@@ -235,15 +338,15 @@ void AMyProjectGameMode::ValidCheckpoint()
 }
 
 bool AMyProjectGameMode::IsPreviousCheckpointValid(int32 id) {
-	for (ACheckPoint* Checkpoint : Checkpoints) {
-		if (Checkpoint && Checkpoint->GetId() == id) {
-			for (ACheckPoint* PreviousCheckpoint : Checkpoints) {
-				if (PreviousCheckpoint && PreviousCheckpoint->GetId() == id - 1) {
-					if (!PreviousCheckpoint->GetIsEnter()) {
-						UE_LOG(LogTemp, Warning, TEXT("Vous avez sauté le checkpoint précédent !"));
-						return false;
-					}
-					return true;
+	const TArray<ACheckPoint*>& CurrentCheckpoints = bUseTempCheckpoints ? CheckpointsTemp : Checkpoints;
+	
+	for (int i = 0; i < CurrentCheckpoints.Num(); i++) {
+		if (CurrentCheckpoints[i] && CurrentCheckpoints[i]->GetId() == id) {
+			if (i > 0) { // Vérifie s'il y a un checkpoint précédent
+				ACheckPoint* PreviousCheckpoint = CurrentCheckpoints[i - 1];
+				if (PreviousCheckpoint && !PreviousCheckpoint->GetIsEnter()) {
+					UE_LOG(LogTemp, Warning, TEXT("Vous avez sauté le checkpoint précédent !"));
+					return false;
 				}
 			}
 			return true;
@@ -251,4 +354,50 @@ bool AMyProjectGameMode::IsPreviousCheckpointValid(int32 id) {
 	}
 	return false;
 }
+
+
+void AMyProjectGameMode::UpdateCheckpointOrder() {
+	CheckpointsTemp.Empty();
+
+	// Ajouter les checkpoints dans l'ordre défini
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::Mid) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::All) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::Begin) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+	for (ACheckPoint* Checkpoint : Checkpoints) {
+		if (Checkpoint && Checkpoint->GetState() == ECheckPointState::End) {
+			CheckpointsTemp.Add(Checkpoint);
+		}
+	}
+
+	bUseTempCheckpoints = true;
+}
+
+
+void AMyProjectGameMode::VerifySwitch()
+{
+	if ((CurrentLap == 0) || (CurrentLap == TotalLaps - 1))
+	{
+		bUseTempCheckpoints = false ;
+	}
+	else
+	{
+
+		bUseTempCheckpoints = true;
+	}
+}
+
+
+
 
