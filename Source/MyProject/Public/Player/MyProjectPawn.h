@@ -176,6 +176,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boost")
 	void SetIsGrounded(bool state);
 
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void PlayBoostParticles();
+
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void StopBoostParticles();
+
+
 protected:
 
 	/** Handles steering input */
@@ -235,6 +242,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* DriftSound;
+
+	FVector LerpCameraPosition(FVector originalPositon,FVector targetPosition ,float duration);
+	FRotator LerpCameraRotation(FRotator originalRotator, FRotator targetRotator ,float duration);
+	
 
 	
 

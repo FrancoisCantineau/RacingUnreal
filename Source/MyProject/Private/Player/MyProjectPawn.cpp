@@ -473,8 +473,8 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 			FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
     	
 			// Lerp to a new camera location
-			FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
-			FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
+			FVector NewCameraPosition = LerpCameraPosition(CurrentCameraPosition,TargetCameraPosition, 0.1f);
+			FRotator NewCameraRotation = LerpCameraRotation(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
 
 			BackSpringArm->SetRelativeLocation(NewCameraPosition);
 			BackCamera->SetRelativeRotation(NewCameraRotation);
@@ -486,12 +486,36 @@ void AMyProjectPawn::Boost(const FInputActionValue& Value)
 			FVector ShakeOffset = FVector(FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-5.0f, 5.0f), FMath::RandRange(-2.0f, 2.0f));
 			BackSpringArm->SetWorldLocation(BackSpringArm->GetComponentLocation() + ShakeOffset);
 
-			// Particles manager
-			BoostParticlesLeft->Activate();
-			BoostParticlesRight->Activate();
+			
 		}
 	}
 	
+}
+
+FVector AMyProjectPawn::LerpCameraPosition(FVector originalPostion, FVector targetPosition, float duration)
+{
+	FVector NewPosition = FMath::Lerp(originalPostion, targetPosition, duration); ;
+	return NewPosition;
+}
+FRotator AMyProjectPawn::LerpCameraRotation(FRotator originalRotation, FRotator targetRotation, float duration)
+{
+	FRotator NewRotation = FMath::Lerp(originalRotation, targetRotation, duration); ;
+	return NewRotation;
+}
+
+
+void AMyProjectPawn::PlayBoostParticles()
+{
+	// Particles manager
+	BoostParticlesLeft->Activate();
+	BoostParticlesRight->Activate();
+}
+
+void AMyProjectPawn::StopBoostParticles()
+{
+	// Stop particles
+	BoostParticlesLeft->Deactivate();
+	BoostParticlesRight->Deactivate();
 }
 
 
@@ -502,6 +526,7 @@ void AMyProjectPawn::ActivateBoost(const FInputActionValue& Value)
 
 	SetBoostingInput(true);
 
+	PlayBoostParticles();
 	PlayBoostSound();
 }
 
@@ -518,10 +543,9 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 	bStopsBoosting = true;
 	SetBoostingInput(false);
 
+	StopBoostParticles();
 	StopBoostSound();
-	// Stop particles
-	BoostParticlesLeft->Deactivate();
-	BoostParticlesRight->Deactivate();
+
 
 	// Reset camera position
 	
@@ -532,8 +556,8 @@ void AMyProjectPawn::DeactivateBoost(const FInputActionValue& Value)
 	FRotator CurrentCameraRotation = BackCamera->GetRelativeRotation();
     	
 	// Lerp to a new camera location
-	FVector NewCameraPosition = FMath::Lerp(CurrentCameraPosition, TargetCameraPosition, 0.1f); 
-	FRotator NewCameraRotation = FMath::Lerp(CurrentCameraRotation, TargetCameraRotation, 0.1f);
+	FVector NewCameraPosition = LerpCameraPosition(CurrentCameraPosition,TargetCameraPosition, 0.1f);
+	FRotator NewCameraRotation = LerpCameraRotation(CurrentCameraRotation, TargetCameraRotation, 0.1f);  
 
 	BackSpringArm->SetRelativeLocation(NewCameraPosition);
 	BackCamera->SetRelativeRotation(NewCameraRotation);
