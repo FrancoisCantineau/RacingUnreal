@@ -91,8 +91,6 @@ private :
 	/** Increment lap current amount*/
 	void IncrementLap();
 
-	/** Update blocking barriers position*/
-	void UpdateBarriers();
 
 	/** Array for every blocking barrier*/
 	TArray<AMyBlockingBarrier*> Barriers;
@@ -102,8 +100,6 @@ private :
 	
 
 	
-	/** Array for every blocking barrier*/
-	TArray<AMyBlockingBarrier*> Barriers;
 	TArray<ACheckPoint*> CheckpointsTemp; 
 	bool bUseTempCheckpoints = false;   
 protected:

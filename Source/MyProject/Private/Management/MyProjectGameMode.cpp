@@ -56,7 +56,7 @@ void AMyProjectGameMode::BeginPlay()
 void AMyProjectGameMode::SetupCheckPoint()
 {
 
-    TArray<AActor*> FoundActors;
+    /**TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACheckPoint::StaticClass(), FoundActors);
 	
 
@@ -104,7 +104,7 @@ void AMyProjectGameMode::SetupCheckPoint()
         Checkpoint->SetId(CurrentID);
         CurrentID++;
     }
-	
+	*/
 }
 
 
